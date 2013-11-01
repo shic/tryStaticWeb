@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<!-- the DirectionsService object calculate directions -->
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+<meta charset="utf-8">
+<title>Waypoints in directions</title>
+
+
+<style>
+html,body,#map-canvas {
+	height: 100%;
+	margin: 0px;
+	padding: 0px
+}
+
+#panel {
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	margin-left: -180px;
+	z-index: 5;
+	background-color: #fff;
+	padding: 5px;
+	border: 1px solid #999;
+}
+</style>
+
+<script
+	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_DLL1eIgaDvOgCIjPE5k0n_JaSXoZcyI&sensor=false">
+</script>
+
+
+<script>
+<!-- drag -->
+		var rendererOptions = {
+		  draggable: true
+		};
+		
+		var directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+		<!-- drag-->
+		
+		
+		
+	var directionsService = new google.maps.DirectionsService();<!-- the DirectionsService object calculate directions -->
+	var map;
+
+	function initialize() {
+		directionsDisplay = new google.maps.DirectionsRenderer(); <!--the DirectionsRenderer object render calculated directions.-->
+		var roma = new google.maps.LatLng(41.893056, 12.482778);
+		var mapOptions = {
+			zoom : 12,
+			mapTypeId : google.maps.MapTypeId.ROADMAP,
+			center : roma
+		}
+		map = new google.maps.Map(document.getElementById('map-canvas'),
+				mapOptions);
+		directionsDisplay.setMap(map);
+   		directionsDisplay.setPanel(document.getElementById('directions-panel'));
+   		
+   		<!-- drag-->
+
+   	  google.maps.event.addListener(directionsDisplay, 'directions_changed', function() {
+   	    computeTotalDistance(directionsDisplay.directions);
+   	  });
+   	<!-- drag-->
+
+	}
+
+	function calcRoute() {
+		var start = document.getElementById('start').value;
+		var end = document.getElementById('end').value;
+		var waypts = [];
+		var checkboxArray = document.getElementById('waypoints');
+		for (var i = 0; i < checkboxArray.length; i++) {
+			if (checkboxArray.options[i].selected == true) {
+				waypts.push({
+					location : checkboxArray[i].value,
+					stopover : true
+				});
+			}
+		}
+
+		var request = {
+			origin : start,
+			destination : end,
+			travelMode : google.maps.TravelMode.DRIVING,
+			waypoints : waypts,
+			optimizeWaypoints : true,
+			provideRouteAlternatives: true
+
+		};
+		
+		function computeTotalDistance(result) {
+			  var total = 0;
+			  var myroute = result.routes[0];
+			  for (var i = 0; i < myroute.legs.length; i++) {
+			    total += myroute.legs[i].distance.value;
+			  }
+			  total = total / 1000.
+			  document.getElementById('total').innerHTML = total + ' km';
+			}
+		
+		<!-- initiate a request to the Directions service-->
+		directionsService.route(request, function(response, status) {
+			if (status == google.maps.DirectionsStatus.OK) {
+				directionsDisplay.setDirections(response);
+				var route = response.routes[0];
+				var summaryPanel = document.getElementById('directions_panel');
+				summaryPanel.innerHTML = '';
+				// For each route, display summary information.
+				for (var i = 0; i < route.legs.length; i++) {
+					var routeSegment = i + 1;
+					summaryPanel.innerHTML += '<b>Route Segment: '
+							+ routeSegment + '</b><br>';
+					summaryPanel.innerHTML += route.legs[i].start_address
+							+ ' to ';
+					summaryPanel.innerHTML += route.legs[i].end_address
+							+ '<br>';
+					summaryPanel.innerHTML += route.legs[i].distance.text
+							+ '<br><br>';
+				}
+			}
+		});
+	}
+
+	google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+
+</head>
+
+
+<body>
+
+	<div id="map-canvas" style="float: left; width: 70%; height: 100%;"></div>
+	<div id="control_panel"
+		style="float: right; width: 30%; text-align: left; padding-top: 20px">
+		<div style="margin: 20px; border-width: 2px;">
+
+			<b>Start:</b> <select id="start">
+				<option value="Via Carroceto, 96, Roma, 00178 RM">Via
+					Carroceto, 96</option>
+				<option value="Via di Passo Lombardo, 341,00133 Roma">Campusx</input>
+			</select> <br> <b>Waypoints:</b> <br> <i>(Ctrl-Click for
+				multiple selection)</i> <br> <select multiple id="waypoints">
+				<option value="Via Gian Cristoforo Romano, 46, Roma, RM">Poste
+					Italiane</input>
+				<option value="Via Tuscolana, 745, Roma, 00174 RM">Cinema
+					Atlantic</input>
+				<option value="Via Enrico Ferri, 8, Roma, 00173 RM">Carrefour
+					Romanina</input>
+				<option value="Via M. Pandolfi De Rinaldis, 14/16, Roma">Decathlon</input>
+				<option value="Via di Passo Lombardo, 341,00133 Roma">Campusx</input>
+				<option value="Via della Tenuta di Torrenova, 8, 00133 Roma">Eurospin</input>
+				<option value="Via di Tor Vergata, 1,00133 Roma">Emmepiu</input>
+				<option value="Via dei Giardinetti, 223,00133 Roma">Sporting
+					fish</option>
+				<option value="Viale della Bella Villa, 62,00172 Roma">Farmacia</option>
+				<!--More than 8 point,the server of google will not calculate, so we should warn the user-->
+			</select> <br> <b>End:</b> <select id="end">
+				<option value="Viale Oxford, 81, Roma, 00133 RM">University
+					of Rome Tor Vergata</option>
+
+			</select> <br> <b>Mode of Travel: </b> <select id="mode"
+				onchange="calcRoute();">
+				<option value="DRIVING">Driving</option>
+				<option value="WALKING">Walking</option>
+				<option value="BICYCLING">Bicycling</option>
+				<option value="TRANSIT">Transit</option>
+			</select> <input type="submit" onclick="calcRoute();">
+		</div>
+		<div id="directions_panel"
+			style="margin: 20px; background-color: #FFEE77;"></div>
+		<!-- yellow-->
+
+	</div>
+</body>
+</html>
